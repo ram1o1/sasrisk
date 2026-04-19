@@ -1,2 +1,4 @@
 gradio
 docling
+google-genai
+python-dotenv

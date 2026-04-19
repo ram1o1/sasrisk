@@ -1,8 +1,13 @@
 import os
 import glob
+from dotenv import load_dotenv
 from src import config
 from src.extractor import FinancialExtractor
 from src.processor import process_document
+from src.llm_analyzer import extract_structured_report
+
+# Load environment variables (like GEMINI_API_KEY)
+load_dotenv()
 
 def run_batch_pipeline():
     # 1. Setup paths
@@ -29,14 +34,21 @@ def run_batch_pipeline():
         print(f"\n--- Starting: {report_name} ---")
         
         try:
-            # Extract
+            # Extract layout and text using Docling
             doc = extractor.parse_pdf(pdf_path)
             
-            # Process & Save
+            # Process & Save (Markdown & Structured Tables)
             results = process_document(doc, report_name, output_dir)
             
             print(f"✅ Success! Saved to {results['report_dir']}")
-            print(f"   Found {results['tables_extracted']} tables.")
+            print(f"   Extracted {results['structured_data_extracted']} structured data files.")
+            
+            # --- LLM INTELLIGENCE STEP ---
+            # Extract structured JSON using Gemini
+            analysis_file = extract_structured_report(results['markdown_file'], report_name)
+            if analysis_file:
+                 print(f"   ✅ LLM Extracted JSON saved to {os.path.basename(analysis_file)}")
+
             success_count += 1
             
         except Exception as e:
